@@ -1,0 +1,23 @@
+{
+  "simulation": {
+    "N": 1024,
+    "dim": 2,
+    "dx": 0.1,
+    "dt": 0.004,
+    "steps": 200000,
+    "num_snapshots": 200,
+    "init_file": "./initial_conditions_1024_001.h5"
+  },
+  "model": {
+    "a": 3.5,
+    "b": 3.0,
+    "c": 3.5,
+    "alpha": 1.5,
+    "phi": 0.5,
+    "eps2": 1.0,
+    "eps3": 0.5,
+    "D1": 0.0,
+    "D2": 0.0,
+    "D3": 0.5
+  }
+}
