@@ -3,8 +3,8 @@
     "N": 1024,
     "dim": 2,
     "dx": 0.1,
-    "dt": 0.004,
-    "steps": 200000,
+    "dt": 0.005,
+    "steps": 500000,
     "num_snapshots": 200,
     "init_file": "./initial_conditions_1024_001.h5"
   },

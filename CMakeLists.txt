@@ -10,10 +10,12 @@ set(CMAKE_CUDA_ARCHITECTURES 86)
 find_package(CUDAToolkit REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(HDF5 REQUIRED COMPONENTS C)
+find_package(ZLIB REQUIRED)
 
 add_executable(mfhn_solver
     src/main.cu
     src/config.cpp
+    src/h5_exporter.cpp
     src/solver_explicit.cu
 )
 
@@ -24,6 +26,7 @@ target_link_libraries(mfhn_solver
     CUDA::cudart
     nlohmann_json::nlohmann_json
     HDF5::HDF5
+    ZLIB::ZLIB
 )
 
-#set_target_properties(fhn_solver PROPERTIES CUDA_ARCHITECTURES "75;80;86")
+set_target_properties(mfhn_solver PROPERTIES CUDA_ARCHITECTURES "75;80;86")
