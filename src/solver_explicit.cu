@@ -3,13 +3,15 @@
 #include "params.h"
 #include "solver_explicit.cuh"
 
-__device__ void reaction_mfhn(float& du, float& dv, float& dw, const float u, const float v, const float w, const ModelParams& p) {
+__device__ void reaction_mfhn(float& du, float& dv, float& dw, const float u, const float v, const float w, const ModelParams& p)
+{
     du = p.phi * (p.a * u - p.alpha * u * u * u - p.b * v - p.c * w);
     dv = p.phi * p.eps2 * (u - v);
     dw = p.phi * p.eps3 * (u - w);
 }
 
-__global__ void gpu_explicit_1d(float* u_out, float* v_out, float* w_out, const float* u_cur, const float* v_cur, const float* w_cur, const SimParams params, int N, float dt, float r_u, float r_v, float r_w) {
+__global__ void gpu_explicit_1d(float* u_out, float* v_out, float* w_out, const float* u_cur, const float* v_cur, const float* w_cur, const SimParams params, int N, float dt, float r_u, float r_v, float r_w)
+{
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= N) return;
 
@@ -35,10 +37,6 @@ __global__ void gpu_explicit_1d(float* u_out, float* v_out, float* w_out, const 
     float v_k4 = v0 + dt * k3_v;
     float w_k4 = w0 + dt * k3_w;
     reaction_mfhn(k4_u, k4_v, k4_w, u_k4, v_k4, w_k4, params.model);
-
-    // u_out[i] = u0 + (dt / 6.0f) * (k1_u + 2.0f * k2_u + 2.0f * k3_u + k4_u);
-    // v_out[i] = v0 + (dt / 6.0f) * (k1_v + 2.0f * k2_v + 2.0f * k3_v + k4_v);
-    // w_out[i] = w0 + (dt / 6.0f) * (k1_w + 2.0f * k2_w + 2.0f * k3_w + k4_w);
 
     float u_left, u_right;
     float v_left, v_right;
@@ -72,7 +70,8 @@ __global__ void gpu_explicit_1d(float* u_out, float* v_out, float* w_out, const 
     w_out[i] = w0 + r_w * (w_left - 2.0f * w0 + w_right) + (dt / 6.0f) * (k1_w + 2.0f * k2_w + 2.0f * k3_w + k4_w);
 }
 
-__global__ void gpu_explicit_2d(float* u_out, float* v_out, float* w_out, const float* u_cur, const float* v_cur, const float* w_cur, const SimParams params, int N, float dt, float r_u, float r_v, float r_w) {
+__global__ void gpu_explicit_2d(float* u_out, float* v_out, float* w_out, const float* u_cur, const float* v_cur, const float* w_cur, const SimParams params, int N, float dt, float r_u, float r_v, float r_w)
+{
     int ix = blockIdx.x * blockDim.x + threadIdx.x;
     int iy = blockIdx.y * blockDim.y + threadIdx.y;
     if (ix >= N || iy >= N) return;

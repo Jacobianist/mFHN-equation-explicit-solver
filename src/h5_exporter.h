@@ -1,31 +1,25 @@
 #pragma once
 
-#include <cuda_runtime.h>
 #include <hdf5.h>
 
 #include <string>
 #include <vector>
 
-class HDF5Exporter {
+class HDF5Writer
+{
    public:
-    HDF5Exporter(const std::string& filename, int total_snapshots, int N, float dx, float dt);
-    HDF5Exporter(const std::string& filename, int total_snapshots, int Nx, int Ny, float dx, float dt);
-    ~HDF5Exporter();
+    HDF5Writer(const std::string& filename, int N, int total_snapshots, int dim);
+    ~HDF5Writer();
 
-    void save_step(int step_idx, const float* d_u, const float* d_v, const float* d_w, float time);
-    void close();
+    void writeStep(int step_idx, const float* h_u, const float* h_v, const float* h_w);
 
    private:
-    hid_t file_id;
-    hid_t dataset_u, dataset_v, dataset_w, dataset_time;
-    int rank;
-    int N1d;
-    int Nx, Ny;
-    int total_snapshots;
-    float dx, dt;
-    std::vector<float> h_buffer;
-    bool is_open;
+    hid_t file_id_;
+    hid_t dataset_u_, dataset_v_, dataset_w_;
+    hid_t filespace_;
+    hid_t memspace_;
 
-    void create_datasets();
-    void write_slice(hid_t dataset, int step_idx, const float* d_data);
+    int N_;
+    int total_snapshots_;
+    int dim_;
 };

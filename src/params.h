@@ -1,5 +1,5 @@
 #pragma once
-#include <algorithm>  // для std::max
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -19,7 +19,6 @@ struct SimParams {
     int num_snapshots;
     std::string init_file;
 
-    // Вспомогательные методы
     ModelParams model;
     std::string output_dir = "./results";
     std::string name = "mfhn_simulation";
@@ -31,7 +30,8 @@ struct SimParams {
     float r_v() const { return dt * model.D2 / (2.0f * dx * dx); }
     float r_w() const { return dt * model.D3 / (2.0f * dx * dx); }
 
-    bool is_stable() const {
+    bool is_stable() const
+    {
         float Dmax = get_max_diffusion();
         if (Dmax == 0.0f) return true;
         float dt_max = (DIMENSION == 1) ? (dx * dx) / (2.0f * Dmax) : (dx * dx) / (4.0f * Dmax);

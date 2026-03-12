@@ -9,7 +9,7 @@ set(CMAKE_CUDA_ARCHITECTURES 86)
 
 find_package(CUDAToolkit REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(HDF5 REQUIRED COMPONENTS C)
+find_package(HDF5 REQUIRED COMPONENTS CXX)
 find_package(ZLIB REQUIRED)
 
 add_executable(mfhn_solver

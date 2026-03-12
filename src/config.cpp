@@ -8,7 +8,8 @@
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
-SimParams ConfigLoader::load(const std::string& filename) {
+SimParams ConfigLoader::load(const std::string& filename)
+{
     std::ifstream f(filename);
     if (!f.is_open()) {
         throw std::runtime_error("Cannot open config file: " + filename);
@@ -19,7 +20,7 @@ SimParams ConfigLoader::load(const std::string& filename) {
 
     SimParams params;
 
-    // Обязательные поля
+    // main parameters
     auto& fhnparams = j.at("simulation");
     params.N = fhnparams.at("N").get<int>();
     params.DIMENSION = fhnparams.at("dim").get<int>();
@@ -31,7 +32,7 @@ SimParams ConfigLoader::load(const std::string& filename) {
     params.output_dir = fhnparams.value("output_dir", "./results");
     params.name = fhnparams.value("name", "fhn_simulation");
 
-    // Параметры модели
+    // model parameters
     auto& model = j.at("model");
     params.model.a = model.at("a").get<float>();
     params.model.b = model.at("b").get<float>();
@@ -47,7 +48,8 @@ SimParams ConfigLoader::load(const std::string& filename) {
     validate(params);
     return params;
 }
-void ConfigLoader::validate(const SimParams& params) {
+void ConfigLoader::validate(const SimParams& params)
+{
     if (params.DIMENSION != 1 && params.DIMENSION != 2) {
         throw std::runtime_error("dim must be 1 or 2");
     }
@@ -64,7 +66,7 @@ void ConfigLoader::validate(const SimParams& params) {
         throw std::runtime_error("Diffusion coefficients must be non-negative");
     }
 
-    // Проверка устойчивости для явного метода
+    // checking
     if (!params.is_stable()) {
         float Dmax = params.get_max_diffusion();
         float dt_max = (params.DIMENSION == 1) ? (params.dx * params.dx) / (2.0f * Dmax) : (params.dx * params.dx) / (4.0f * Dmax);
@@ -74,6 +76,6 @@ void ConfigLoader::validate(const SimParams& params) {
         std::cerr << "  Consider reducing dt or using implicit scheme." << std::endl;
     }
 
-    // Создание выходной директории
+    // mkdir
     fs::create_directories(params.output_dir);
 }
