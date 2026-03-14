@@ -1,17 +1,17 @@
 #include <cuda_runtime.h>
 #include <hdf5.h>
 
-#include <chrono>
+// #include <chrono>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
-#include <ostream>
+// #include <ostream>
 #include <random>
 #include <sstream>
 #include <string>
 
 #include "config.h"
 #include "h5_exporter.h"
+#include "logger.h"
 #include "solver_explicit.cuh"
 
 void generate_1d(std::vector<float>& u, std::vector<float>& v, std::vector<float>& w, const SimParams& params)
@@ -137,16 +137,29 @@ int main()
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
     auto params = ConfigLoader::load("config.json");
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d_%H-%M-%S");
-    std::string run_dir_name = params.output_dir + "\\" + ss.str();
+    std::stringstream ss_date, ss_time;
+    ss_date << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d");
     if (!std::filesystem::exists("results")) std::filesystem::create_directory("results");
-    std::filesystem::create_directory(run_dir_name);
 
+    std::string tags = "";
+    tags += "_dim" + std::to_string(params.DIMENSION);
+    tags += "_N" + std::to_string(params.N);
+    tags += "_a" + std::to_string(params.model.a);
+    tags += "_e2" + std::to_string(params.model.eps2);
+    tags += "_e3" + std::to_string(params.model.eps3);
+    ss_time << std::put_time(std::localtime(&in_time_t), "%H%M%S");
+    std::string run_dir_name = ss_time.str() + tags;
+    std::filesystem::path full_path = std::filesystem::path("results") / ss_date.str() / run_dir_name;
+
+    std::filesystem::create_directories(full_path);
+    try {
+        std::filesystem::copy_file("config.json", full_path / "config.json");
+    } catch (...) {
+        std::cerr << "Warning: Could not copy config.json" << std::endl;
+    }
+    Logger logger(full_path.string() + "/simulation.log");
     std::cout << "Config loaded. N=" << params.N << ", dt=" << params.dt << ", dx=" << params.dx << ", alpha=" << params.model.alpha << ", ksi=" << params.dt / (2 * params.dx * params.dx) << std::endl;
-
     std::vector<float> h_u(params.size_total()), h_v(params.size_total()), h_w(params.size_total());
-    std::cout << "ONE  " << params.DIMENSION << std::endl;
 
     bool loaded = false;
     if (std::filesystem::exists(params.init_file.c_str())) {
@@ -164,9 +177,10 @@ int main()
             generate_2d(h_u, h_v, h_w, params);
         }
     }
-
+    logger.logMemoryUsage(params.N);
     float *d_u, *d_v, *d_w;
     float *d_u_next, *d_v_next, *d_w_next;
+
     cudaMalloc(&d_u, params.size_total() * sizeof(float));
     cudaMalloc(&d_u_next, params.size_total() * sizeof(float));
     cudaMalloc(&d_v, params.size_total() * sizeof(float));
@@ -181,9 +195,10 @@ int main()
     cudaDeviceSynchronize();
 
     int saveInterval = params.steps / params.num_snapshots;
-    HDF5Writer writer(run_dir_name + "/result.h5", params.N, params.num_snapshots + 1, params.DIMENSION);
+    HDF5Writer writer(full_path.string() + "/result.h5", params.N, params.num_snapshots + 1, params.DIMENSION);
     int snapshot_idx = 0;
     writer.writeStep(snapshot_idx++, h_u.data(), h_v.data(), h_w.data());
+    logger.log("Save interval: " + std::to_string(saveInterval) + " steps.");
 
     if (params.DIMENSION == 1) {
         int blocks = (params.N + 255) / 256;
@@ -192,15 +207,16 @@ int main()
             std::swap(d_u, d_u_next);
             std::swap(d_v, d_v_next);
             std::swap(d_w, d_w_next);
-            if ((ITERATION_STEP + 1) % saveInterval == 0 || ITERATION_STEP == params.steps) {
+            if (ITERATION_STEP % saveInterval == 0 || ITERATION_STEP == params.steps) {
                 cudaMemcpy(h_u.data(), d_u, params.size_total() * sizeof(float), cudaMemcpyDeviceToHost);
                 cudaMemcpy(h_v.data(), d_v, params.size_total() * sizeof(float), cudaMemcpyDeviceToHost);
                 cudaMemcpy(h_w.data(), d_w, params.size_total() * sizeof(float), cudaMemcpyDeviceToHost);
                 writer.writeStep(snapshot_idx++, h_u.data(), h_v.data(), h_w.data());
+                logger.log("Step " + std::to_string(ITERATION_STEP));
             }
             cudaDeviceSynchronize();
         }
-    } else {
+    } else if (params.DIMENSION == 2) {
         dim3 threads(16, 16);
         dim3 blocks((params.N + 15) / 16, (params.N + 15) / 16);
         for (int ITERATION_STEP = 1; ITERATION_STEP <= params.steps; ++ITERATION_STEP) {
@@ -208,14 +224,17 @@ int main()
             std::swap(d_u, d_u_next);
             std::swap(d_v, d_v_next);
             std::swap(d_w, d_w_next);
-            if ((ITERATION_STEP + 1) % saveInterval == 0 || ITERATION_STEP == params.steps) {
+            if (ITERATION_STEP % saveInterval == 0 || ITERATION_STEP == params.steps) {
                 cudaMemcpy(h_u.data(), d_u, params.size_total() * sizeof(float), cudaMemcpyDeviceToHost);
                 cudaMemcpy(h_v.data(), d_v, params.size_total() * sizeof(float), cudaMemcpyDeviceToHost);
                 cudaMemcpy(h_w.data(), d_w, params.size_total() * sizeof(float), cudaMemcpyDeviceToHost);
                 writer.writeStep(snapshot_idx++, h_u.data(), h_v.data(), h_w.data());
+                logger.log("Step " + std::to_string(ITERATION_STEP));
             }
             cudaDeviceSynchronize();
         }
+    } else {
+        logger.log("ERROR: Unknown dimension!");
     }
 
     cudaFree(d_u);
@@ -225,9 +244,8 @@ int main()
     cudaFree(d_v_next);
     cudaFree(d_w_next);
 
-    std::cout << "Results saved in `result.h` in " << run_dir_name << std::endl;
-
+    logger.log("Results saved in `result.h5` in " + full_path.string());
     auto t_end = std::chrono::high_resolution_clock::now();
     double elapsed_sec = std::chrono::duration<double>(t_end - t_start).count();
-    std::cout << "Time spent: " << std::to_string(elapsed_sec) << std::endl;
+    logger.log("Total time: " + std::to_string(elapsed_sec) + " seconds.");
 }

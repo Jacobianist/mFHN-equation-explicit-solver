@@ -1,11 +1,11 @@
 #include "config.h"
 
-#include <filesystem>
+// #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
 
-namespace fs = std::filesystem;
+// namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 SimParams ConfigLoader::load(const std::string& filename)
@@ -29,7 +29,7 @@ SimParams ConfigLoader::load(const std::string& filename)
     params.steps = fhnparams.at("steps").get<int>();
     params.num_snapshots = fhnparams.at("num_snapshots").get<int>();
     params.init_file = fhnparams.at("init_file").get<std::string>();
-    params.output_dir = fhnparams.value("output_dir", "./results");
+    // params.output_dir = fhnparams.value("output_dir", "./results");
     params.name = fhnparams.value("name", "fhn_simulation");
 
     // model parameters
@@ -77,5 +77,5 @@ void ConfigLoader::validate(const SimParams& params)
     }
 
     // mkdir
-    fs::create_directories(params.output_dir);
+    // fs::create_directories(params.output_dir);
 }

@@ -1,12 +1,12 @@
 {
   "simulation": {
     "N": 1024,
-    "dim": 2,
+    "dim": 1,
     "dx": 0.1,
-    "dt": 0.005,
-    "steps": 500000,
-    "num_snapshots": 200,
-    "init_file": "./initial_conditions_1024_001.h5"
+    "dt": 0.001,
+    "steps": 100000,
+    "num_snapshots": 100,
+    "init_file": "./utils/initial_conditions_1024_0.1.h5"
   },
   "model": {
     "a": 3.5,
