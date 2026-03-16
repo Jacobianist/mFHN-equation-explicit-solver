@@ -1,8 +1,10 @@
-# CUDA Simulation of 1D/2D Three-Component Reaction-Diffusion System (extended FitzHugh-Nagumo)
+# CUDA Simulation of 1D/2D Three-Component Reaction-Diffusion System (Extended FitzHugh-Nagumo)
 
-## Mathematical model
+A high-performance CUDA implementation of an explicit solver for the modified FitzHugh-Nagumo (mFHN) equation system. The solver supports both 1D and 2D simulations with customizable parameters.
 
-A system of three partial differential equations is simulated:
+## Mathematical Model
+
+A system of three coupled partial differential equations is simulated:
 
 $$
 \frac{\partial u}{\partial t} = D_1 \nabla^2 u + \phi (a u - \alpha u^3 - b v - c w)
@@ -18,7 +20,153 @@ $$
 
 where:
 
-- $u$ --- activator (primary variable, e.g. membrane potential).
-- $v, w$ --- inhibitors (recovery variables).
-- $D_1, D_2, D_3$ --- diffusion coefficients.
-- $\phi, a, b, c, \alpha, \varepsilon_2, \varepsilon_3$ --- parameters of the system kinetics.
+- **u** — activator (primary variable, e.g., membrane potential)
+- **v, w** — inhibitors (recovery variables)
+- **D₁, D₂, D₃** — diffusion coefficients
+- **φ, a, b, c, α, ε₂, ε₃** — kinetic parameters of the system
+
+## Numerical Method
+
+The solver uses an explicit time-stepping scheme:
+
+- **Reaction terms**: 4th-order Runge-Kutta (RK4)
+- **Diffusion terms**: Central finite differences (2nd order)
+    - 1D: 3-point stencil
+    - 2D: 5-point stencil
+- **Boundary conditions**: Neumann (zero-flux) on all boundaries
+- **Stability**: CFL condition checked with 10% safety margin
+
+## Project Structure
+
+```
+mFHN-equation-explicit-solver/
+├── CMakeLists.txt              # CMake build configuration
+├── config.json                 # Runtime configuration parameters
+├── README.md                   # This documentation file
+├── initial_conditions_*.h5     # Example initial conditions (HDF5 format)
+├── .gitignore                  # Git ignore rules
+└── src/                        # Source code directory
+    ├── main.cu                 # Main entry point and simulation loop
+    ├── solver_explicit.cu      # CUDA kernel implementations (1D/2D)
+    ├── solver_explicit.cuh     # CUDA kernel declarations
+    ├── params.h                # Parameter structures (ModelParams, SimParams)
+    ├── config.h / config.cpp   # JSON configuration loader
+    ├── h5_exporter.h / h5_exporter.cpp  # HDF5 output writer
+    └── logger.h                # File/console logging utility
+```
+
+### Source Files Description
+
+| File                                | Description                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| `main.cu`                           | Program entry point; handles initialization, time-stepping loop, and I/O |
+| `solver_explicit.cu`                | CUDA kernels for 1D and 2D explicit integration                          |
+| `solver_explicit.cuh`               | Header with CUDA kernel declarations                                     |
+| `params.h`                          | Data structures for model and simulation parameters                      |
+| `config.h` / `config.cpp`           | JSON configuration loading and validation                                |
+| `h5_exporter.h` / `h5_exporter.cpp` | HDF5 file writer for simulation snapshots                                |
+| `logger.h`                          | Simple logging utility for console and file output                       |
+
+## Configuration
+
+Edit `config.json` to set simulation parameters:
+
+```json
+{
+    "simulation": {
+        "N": 1024, // Grid size (N for 1D, N×N for 2D)
+        "dim": 1, // Spatial dimension (1 or 2)
+        "dx": 0.1, // Spatial step size
+        "dt": 0.001, // Time step size
+        "steps": 100000, // Total number of time steps
+        "num_snapshots": 100, // Number of output snapshots
+        "init_file": "./path/to/initial.h5" // Initial conditions file
+    },
+    "model": {
+        "a": 3.5, // Reaction rate coefficient
+        "b": 3.0, // Coupling coefficient for v
+        "c": 3.5, // Coupling coefficient for w
+        "alpha": 1.5, // Cubic nonlinearity coefficient
+        "phi": 0.5, // Kinetics scaling factor
+        "eps2": 1.0, // Time scale for inhibitor v
+        "eps3": 0.5, // Time scale for inhibitor w
+        "D1": 0.0, // Diffusion coefficient for u
+        "D2": 0.0, // Diffusion coefficient for v
+        "D3": 0.5 // Diffusion coefficient for w
+    }
+}
+```
+
+## Building
+
+### Prerequisites
+
+- CUDA Toolkit (10.0+)
+- CMake (3.10+)
+- HDF5 library with C++ bindings
+- nlohmann/json library
+
+### Build Commands
+
+```bash
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+```
+
+## Running
+
+```bash
+./mfhn_solver
+```
+
+The solver will:
+
+1. Load configuration from `config.json`
+2. Initialize or load initial conditions
+3. Run the simulation on GPU
+4. Save results to `results/YYYY-MM-DD/HHMMSS_dimN_N.../`
+
+### Output Files
+
+- `result.h5` — HDF5 file containing time-series data for u, v, w
+- `simulation.log` — Log file with progress and timing information
+- `config.json` — Copy of the configuration used
+
+### HDF5 Output Structure
+
+```
+result.h5
+├── u  # Dataset: (num_snapshots, N) for 1D or (num_snapshots, N, N) for 2D
+├── v  # Dataset: same shape as u
+└── w  # Dataset: same shape as u
+```
+
+## Initial Conditions
+
+### Default Generation
+
+If no initial condition file is provided or loading fails, the solver generates default conditions:
+
+- **1D**: Localized pulse in the center (u≈1.0, v≈0.0, w≈0.0)
+- **2D**: Circular spot in the center (u≈1.0, v≈0.0, w≈0.0)
+
+Small random noise is added to mimic perturbations.
+
+### Custom Initial Conditions
+
+Provide an HDF5 file with datasets named `u`, `v`, `w`. The file should contain:
+
+- **1D simulation**: 2D dataset (will extract middle row) or 1D dataset
+- **2D simulation**: 2D dataset of shape (N, N)
+
+## Stability Considerations
+
+The explicit scheme requires the CFL condition to be satisfied:
+
+- **1D**: dt ≤ dx² / (2 × D_max)
+- **2D**: dt ≤ dx² / (4 × D_max)
+
+where D_max = max(D₁, D₂, D₃).
+
+The solver automatically checks this condition and warns if the time step may be unstable.

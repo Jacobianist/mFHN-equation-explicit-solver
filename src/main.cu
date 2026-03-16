@@ -14,6 +14,19 @@
 #include "logger.h"
 #include "solver_explicit.cuh"
 
+/**
+ * @brief Generates 1D initial conditions for the simulation.
+ * 
+ * Creates a localized perturbation (pulse) in the center of the domain:
+ * - Inside radius: u ≈ 1.0 (activator), v ≈ 0.0, w ≈ 0.0 (inhibitors)
+ * - Outside radius: u ≈ 0.0, v ≈ 0.0, w ≈ 0.0 (rest state)
+ * Small random noise is added to mimic perturbations.
+ * 
+ * @param u Output array for activator variable
+ * @param v Output array for inhibitor v variable
+ * @param w Output array for inhibitor w variable
+ * @param params Simulation parameters (N, dx)
+ */
 void generate_1d(std::vector<float>& u, std::vector<float>& v, std::vector<float>& w, const SimParams& params)
 {
     float center = params.dx * params.N / 2.0f;
@@ -38,10 +51,23 @@ void generate_1d(std::vector<float>& u, std::vector<float>& v, std::vector<float
     }
 }
 
+/**
+ * @brief Generates 2D initial conditions for the simulation.
+ * 
+ * Creates a circular localized perturbation (spot) in the center of the domain:
+ * - Inside radius: u ≈ 1.0 (activator), v ≈ 0.0, w ≈ 0.0 (inhibitors)
+ * - Outside radius: u ≈ 0.0, v ≈ 0.0, w ≈ 0.0 (rest state)
+ * Small random noise is added to mimic perturbations.
+ * 
+ * @param u Output array for activator variable (size N×N)
+ * @param v Output array for inhibitor v variable
+ * @param w Output array for inhibitor w variable
+ * @param params Simulation parameters (N, dx)
+ */
 void generate_2d(std::vector<float>& u, std::vector<float>& v, std::vector<float>& w, const SimParams& params)
 {
     float center = params.dx * params.N / 2.0f;
-    float radius = 16.0f * params.dx;  // радиус пятна
+    float radius = 16.0f * params.dx;  // Spot radius
 
     std::mt19937 gen(42);
     std::uniform_real_distribution<float> noise(-0.1f, 0.1f);
@@ -65,9 +91,24 @@ void generate_2d(std::vector<float>& u, std::vector<float>& v, std::vector<float
         }
     }
 }
+
+/**
+ * @brief Loads initial condition data from an HDF5 file.
+ * 
+ * Reads a dataset from an HDF5 file and extracts either:
+ * - 1D data: a row slice from a 2D dataset, or the full 1D dataset
+ * - 2D data: the complete 2D dataset
+ * 
+ * @param filename Path to the HDF5 file
+ * @param dataset_name Name of the dataset to read (e.g., "u", "v", "w")
+ * @param target_dim Target dimension (1 for 1D simulation, 2 for 2D)
+ * @param slice_index Row index to extract for 1D from 2D data
+ * @param out_data Output vector to store the loaded data
+ * @return true if loading succeeded, false otherwise
+ */
 bool load_hdf5_data(const std::string& filename, const std::string& dataset_name, int target_dim, int slice_index, std::vector<float>& out_data)
 {
-    // 1. Открываем файл и датасет
+    // 1. Open file and dataset
     hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
     if (file_id < 0) {
         std::cerr << "Warning: Cannot open file " << filename << std::endl;
@@ -79,7 +120,7 @@ bool load_hdf5_data(const std::string& filename, const std::string& dataset_name
         H5Fclose(file_id);
         return false;
     }
-    // 2. Получаем размерности файла (чтобы узнать N)
+    // 2. Get file dimensions (to determine N)
     hid_t file_space_id = H5Dget_space(dataset_id);
     int ndims = H5Sget_simple_extent_ndims(file_space_id);
 
@@ -93,6 +134,7 @@ bool load_hdf5_data(const std::string& filename, const std::string& dataset_name
 
     herr_t status = -1;
     if (target_dim == 2) {
+        // 2D simulation: read entire 2D dataset
         if (ndims == 2) {
             hsize_t total_size = dims[0] * dims[1];
             out_data.resize(total_size);
@@ -104,6 +146,7 @@ bool load_hdf5_data(const std::string& filename, const std::string& dataset_name
             std::cerr << "Error: Expecting 2D data in file, but found " << ndims << "D." << std::endl;
         }
     } else if (target_dim == 1) {
+        // 1D simulation: extract a row slice from 2D data
         if (ndims == 1) {
             out_data.resize(dims[0]);
             hid_t mem_space_id = H5Screate_simple(1, dims, nullptr);
@@ -113,7 +156,7 @@ bool load_hdf5_data(const std::string& filename, const std::string& dataset_name
             if (slice_index < 0 || slice_index >= (int)dims[0]) {
                 std::cerr << "Error: slice_index " << slice_index << " is out of bounds [0, " << dims[0] << "]" << std::endl;
             } else {
-                hsize_t size_1d = dims[1];  // Длина строки
+                hsize_t size_1d = dims[1];  // Row length
                 out_data.resize(size_1d);
                 hsize_t offset[2] = {static_cast<hsize_t>(slice_index), 0};
                 hsize_t count[2] = {1, size_1d};
@@ -124,13 +167,30 @@ bool load_hdf5_data(const std::string& filename, const std::string& dataset_name
             }
         }
     }
-    // 6. Закрываем всё
+    // 6. Close all handles
     H5Sclose(file_space_id);
     H5Dclose(dataset_id);
     H5Fclose(file_id);
     return (status >= 0);
 }
 
+/**
+ * @brief Main entry point for the mFHN explicit solver.
+ * 
+ * Execution flow:
+ * 1. Load configuration from config.json
+ * 2. Create output directory structure (results/YYYY-MM-DD/HHMMSS_...)
+ * 3. Initialize or load initial conditions
+ * 4. Allocate CUDA device memory and transfer data
+ * 5. Run time-stepping loop with RK4 + finite differences
+ * 6. Save snapshots at regular intervals to HDF5
+ * 7. Clean up resources and report timing
+ * 
+ * Output:
+ * - results/YYYY-MM-DD/HHMMSS_dimN_N.../result.h5 - simulation data
+ * - results/YYYY-MM-DD/HHMMSS_dimN_N.../simulation.log - log file
+ * - results/YYYY-MM-DD/HHMMSS_dimN_N.../config.json - copied config
+ */
 int main()
 {
     auto t_start = std::chrono::high_resolution_clock::now();
@@ -141,6 +201,7 @@ int main()
     ss_date << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d");
     if (!std::filesystem::exists("results")) std::filesystem::create_directory("results");
 
+    // Build output directory path with simulation tags
     std::string tags = "";
     tags += "_dim" + std::to_string(params.DIMENSION);
     tags += "_N" + std::to_string(params.N);
@@ -161,10 +222,11 @@ int main()
     std::cout << "Config loaded. N=" << params.N << ", dt=" << params.dt << ", dx=" << params.dx << ", alpha=" << params.model.alpha << ", ksi=" << params.dt / (2 * params.dx * params.dx) << std::endl;
     std::vector<float> h_u(params.size_total()), h_v(params.size_total()), h_w(params.size_total());
 
+    // Try to load initial conditions from file, or generate default
     bool loaded = false;
     if (std::filesystem::exists(params.init_file.c_str())) {
         std::cout << "Loading initial conditions from " << params.init_file << " (Dim: " << params.DIMENSION << ")..." << std::endl;
-        int slice_row = params.DIMENSION == 1 ? (params.N / 2) : 0;  // Например, середина
+        int slice_row = params.DIMENSION == 1 ? (params.N / 2) : 0;  // Middle row for 1D
         loaded = load_hdf5_data(params.init_file, "u", params.DIMENSION, slice_row, h_u);
         // if (loaded) loaded = load_hdf5_data(params.init_file, "v", params.dim, slice_row, h_v);
         // if (loaded) loaded = load_hdf5_data(params.init_file, "w", params.dim, slice_row, h_w);
@@ -181,6 +243,7 @@ int main()
     float *d_u, *d_v, *d_w;
     float *d_u_next, *d_v_next, *d_w_next;
 
+    // Allocate device memory for current and next time step arrays
     cudaMalloc(&d_u, params.size_total() * sizeof(float));
     cudaMalloc(&d_u_next, params.size_total() * sizeof(float));
     cudaMalloc(&d_v, params.size_total() * sizeof(float));
@@ -188,22 +251,26 @@ int main()
     cudaMalloc(&d_w, params.size_total() * sizeof(float));
     cudaMalloc(&d_w_next, params.size_total() * sizeof(float));
 
+    // Transfer initial conditions to device
     cudaMemcpy(d_u, h_u.data(), params.size_total() * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_v, h_v.data(), params.size_total() * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_w, h_w.data(), params.size_total() * sizeof(float), cudaMemcpyHostToDevice);
 
     cudaDeviceSynchronize();
 
+    // Calculate save interval and initialize HDF5 writer
     int saveInterval = params.steps / params.num_snapshots;
     HDF5Writer writer(full_path.string() + "/result.h5", params.N, params.num_snapshots + 1, params.DIMENSION);
     int snapshot_idx = 0;
-    writer.writeStep(snapshot_idx++, h_u.data(), h_v.data(), h_w.data());
+    writer.writeStep(snapshot_idx++, h_u.data(), h_v.data(), h_w.data());  // Save initial state
     logger.log("Save interval: " + std::to_string(saveInterval) + " steps.");
 
     if (params.DIMENSION == 1) {
+        // 1D simulation: 256 threads per block
         int blocks = (params.N + 255) / 256;
         for (int ITERATION_STEP = 0; ITERATION_STEP < params.steps; ++ITERATION_STEP) {
             gpu_explicit_1d<<<blocks, 256>>>(d_u_next, d_v_next, d_w_next, d_u, d_v, d_w, params, params.N, params.dt, params.r_u(), params.r_v(), params.r_w());
+            // Swap current and next arrays (ping-pong buffering)
             std::swap(d_u, d_u_next);
             std::swap(d_v, d_v_next);
             std::swap(d_w, d_w_next);
@@ -217,10 +284,12 @@ int main()
             cudaDeviceSynchronize();
         }
     } else if (params.DIMENSION == 2) {
+        // 2D simulation: 16x16 threads per block (256 threads)
         dim3 threads(16, 16);
         dim3 blocks((params.N + 15) / 16, (params.N + 15) / 16);
         for (int ITERATION_STEP = 1; ITERATION_STEP <= params.steps; ++ITERATION_STEP) {
             gpu_explicit_2d<<<blocks, threads>>>(d_u_next, d_v_next, d_w_next, d_u, d_v, d_w, params, params.N, params.dt, params.r_u(), params.r_v(), params.r_w());
+            // Swap current and next arrays (ping-pong buffering)
             std::swap(d_u, d_u_next);
             std::swap(d_v, d_v_next);
             std::swap(d_w, d_w_next);
@@ -237,6 +306,7 @@ int main()
         logger.log("ERROR: Unknown dimension!");
     }
 
+    // Free device memory
     cudaFree(d_u);
     cudaFree(d_v);
     cudaFree(d_w);
