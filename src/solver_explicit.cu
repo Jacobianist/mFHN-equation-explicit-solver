@@ -5,14 +5,14 @@
 
 /**
  * @brief Computes the reaction kinetics for the modified FitzHugh-Nagumo (mFHN) system.
- * 
+ *
  * This device function evaluates the reaction terms of the three-component PDE system:
  * - du/dt = phi * (a*u - alpha*u^3 - b*v - c*w)  [activator]
  * - dv/dt = phi * eps2 * (u - v)                 [inhibitor v]
  * - dw/dt = phi * eps3 * (u - w)                 [inhibitor w]
- * 
+ *
  * The cubic term (alpha*u^3) provides the nonlinearity characteristic of the FitzHugh-Nagumo model.
- * 
+ *
  * @param du Output: reaction term for activator u
  * @param dv Output: reaction term for inhibitor v
  * @param dw Output: reaction term for inhibitor w
@@ -30,16 +30,16 @@ __device__ void reaction_mfhn(float& du, float& dv, float& dw, const float u, co
 
 /**
  * @brief CUDA kernel for 1D explicit time integration using RK4 + finite differences.
- * 
+ *
  * Numerical scheme:
  * 1. Reaction terms: 4th-order Runge-Kutta (RK4)
  * 2. Diffusion terms: Central finite differences (2nd order)
  * 3. Boundary conditions: Neumann (zero-flux) - implemented via ghost point reflection
- * 
+ *
  * Time stepping: u^(n+1) = u^n + diffusion_term + RK4_reaction_term
- * 
+ *
  * Thread organization: 1D grid, each thread handles one spatial point.
- * 
+ *
  * @param u_out Output array for u at next time step
  * @param v_out Output array for v at next time step
  * @param w_out Output array for w at next time step
@@ -60,7 +60,7 @@ __global__ void gpu_explicit_1d(float* u_out, float* v_out, float* w_out, const 
 
     // Store current values at this grid point
     float u0 = u_cur[i], v0 = v_cur[i], w0 = w_cur[i];
-    
+
     // RK4 stages for reaction terms
     float k1_u, k1_v, k1_w;
     float k2_u, k2_v, k2_w;
@@ -129,16 +129,16 @@ __global__ void gpu_explicit_1d(float* u_out, float* v_out, float* w_out, const 
 
 /**
  * @brief CUDA kernel for 2D explicit time integration using RK4 + finite differences.
- * 
+ *
  * Numerical scheme:
  * 1. Reaction terms: 4th-order Runge-Kutta (RK4)
  * 2. Diffusion terms: 5-point stencil for 2D Laplacian
  * 3. Boundary conditions: Neumann (zero-flux) on all edges
- * 
+ *
  * 2D Laplacian: nabla^2 u = (u_left + u_right + u_bottom + u_top - 4*u) / dx^2
- * 
+ *
  * Thread organization: 2D grid of 16x16 thread blocks, each thread handles one grid point (ix, iy).
- * 
+ *
  * @param u_out Output array for u at next time step
  * @param v_out Output array for v at next time step
  * @param w_out Output array for w at next time step
@@ -162,7 +162,7 @@ __global__ void gpu_explicit_2d(float* u_out, float* v_out, float* w_out, const 
 
     // Store current values at this grid point
     float u0 = u_cur[idx], v0 = v_cur[idx], w0 = w_cur[idx];
-    
+
     // RK4 stages for reaction terms
     float k1_u, k1_v, k1_w;
     float k2_u, k2_v, k2_w;

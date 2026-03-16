@@ -5,7 +5,7 @@
 
 /**
  * @brief Configuration loader for simulation parameters.
- * 
+ *
  * Loads and validates simulation parameters from a JSON configuration file.
  * Performs stability checks and ensures all parameters are within valid ranges.
  */
@@ -22,7 +22,7 @@ class ConfigLoader
 
     /**
      * @brief Validates simulation parameters for consistency and stability.
-     * 
+     *
      * Checks:
      * - Dimension is 1 or 2
      * - Grid size N >= 3
@@ -30,7 +30,7 @@ class ConfigLoader
      * - steps and num_snapshots are positive
      * - Diffusion coefficients are non-negative
      * - CFL stability condition is satisfied (with warning if violated)
-     * 
+     *
      * @param params Parameters to validate
      * @throws std::runtime_error if validation fails
      */

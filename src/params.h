@@ -5,7 +5,7 @@
 
 /**
  * @brief Model parameters for the modified FitzHugh-Nagumo (mFHN) system.
- * 
+ *
  * These parameters define the kinetics of the three-component reaction-diffusion system:
  * - u: activator variable (e.g., membrane potential)
  * - v, w: inhibitor variables (recovery variables)
@@ -25,7 +25,7 @@ struct ModelParams {
 
 /**
  * @brief Simulation parameters for the mFHN explicit solver.
- * 
+ *
  * Contains all configuration parameters needed for the CUDA simulation,
  * including spatial/temporal discretization, grid size, and model parameters.
  */
@@ -86,13 +86,13 @@ struct SimParams {
 
     /**
      * @brief Checks if the time step satisfies the CFL stability condition.
-     * 
+     *
      * For explicit schemes, the time step must satisfy:
      * - 1D: dt ≤ dx² / (2 * D_max)
      * - 2D: dt ≤ dx² / (4 * D_max)
-     * 
+     *
      * A 10% safety margin is applied.
-     * 
+     *
      * @return true if stable, false otherwise
      */
     bool is_stable() const

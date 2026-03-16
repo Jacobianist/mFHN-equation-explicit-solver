@@ -5,13 +5,13 @@
 
 /**
  * @brief Constructs and initializes the HDF5 writer.
- * 
+ *
  * Creates an HDF5 file with three datasets (u, v, w) for storing simulation results.
  * Uses chunked storage with deflate compression (level 6) for efficient I/O.
- * 
+ *
  * For 1D: datasets have shape (total_snapshots, N)
  * For 2D: datasets have shape (total_snapshots, N, N)
- * 
+ *
  * @param filename Path to the output HDF5 file
  * @param N Grid size per dimension
  * @param total_snapshots Total number of snapshots to store
@@ -57,7 +57,7 @@ HDF5Writer::HDF5Writer(const std::string& filename, int N, int total_snapshots, 
 
 /**
  * @brief Destructor that closes all HDF5 resources.
- * 
+ *
  * Properly closes datasets, dataspaces, and the file handle.
  */
 HDF5Writer::~HDF5Writer()
@@ -74,10 +74,10 @@ HDF5Writer::~HDF5Writer()
 
 /**
  * @brief Writes a single time step snapshot to the HDF5 file.
- * 
+ *
  * Uses hyperslab selection to write data at the specified snapshot index.
  * Writes all three variables (u, v, w) sequentially.
- * 
+ *
  * @param step_idx Snapshot index to write (0-based, must be < total_snapshots)
  * @param h_u Host array containing activator variable data
  * @param h_v Host array containing inhibitor v variable data

@@ -16,12 +16,12 @@
 
 /**
  * @brief Generates 1D initial conditions for the simulation.
- * 
+ *
  * Creates a localized perturbation (pulse) in the center of the domain:
  * - Inside radius: u ≈ 1.0 (activator), v ≈ 0.0, w ≈ 0.0 (inhibitors)
  * - Outside radius: u ≈ 0.0, v ≈ 0.0, w ≈ 0.0 (rest state)
  * Small random noise is added to mimic perturbations.
- * 
+ *
  * @param u Output array for activator variable
  * @param v Output array for inhibitor v variable
  * @param w Output array for inhibitor w variable
@@ -53,12 +53,12 @@ void generate_1d(std::vector<float>& u, std::vector<float>& v, std::vector<float
 
 /**
  * @brief Generates 2D initial conditions for the simulation.
- * 
+ *
  * Creates a circular localized perturbation (spot) in the center of the domain:
  * - Inside radius: u ≈ 1.0 (activator), v ≈ 0.0, w ≈ 0.0 (inhibitors)
  * - Outside radius: u ≈ 0.0, v ≈ 0.0, w ≈ 0.0 (rest state)
  * Small random noise is added to mimic perturbations.
- * 
+ *
  * @param u Output array for activator variable (size N×N)
  * @param v Output array for inhibitor v variable
  * @param w Output array for inhibitor w variable
@@ -94,11 +94,11 @@ void generate_2d(std::vector<float>& u, std::vector<float>& v, std::vector<float
 
 /**
  * @brief Loads initial condition data from an HDF5 file.
- * 
+ *
  * Reads a dataset from an HDF5 file and extracts either:
  * - 1D data: a row slice from a 2D dataset, or the full 1D dataset
  * - 2D data: the complete 2D dataset
- * 
+ *
  * @param filename Path to the HDF5 file
  * @param dataset_name Name of the dataset to read (e.g., "u", "v", "w")
  * @param target_dim Target dimension (1 for 1D simulation, 2 for 2D)
@@ -176,7 +176,7 @@ bool load_hdf5_data(const std::string& filename, const std::string& dataset_name
 
 /**
  * @brief Main entry point for the mFHN explicit solver.
- * 
+ *
  * Execution flow:
  * 1. Load configuration from config.json
  * 2. Create output directory structure (results/YYYY-MM-DD/HHMMSS_...)
@@ -185,7 +185,7 @@ bool load_hdf5_data(const std::string& filename, const std::string& dataset_name
  * 5. Run time-stepping loop with RK4 + finite differences
  * 6. Save snapshots at regular intervals to HDF5
  * 7. Clean up resources and report timing
- * 
+ *
  * Output:
  * - results/YYYY-MM-DD/HHMMSS_dimN_N.../result.h5 - simulation data
  * - results/YYYY-MM-DD/HHMMSS_dimN_N.../simulation.log - log file

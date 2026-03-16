@@ -7,10 +7,10 @@
 
 /**
  * @brief HDF5 file writer for simulation output.
- * 
+ *
  * Writes time-series data for the three-component system (u, v, w) to an HDF5 file.
  * Supports both 1D and 2D simulations with chunked storage and compression.
- * 
+ *
  * File structure:
  * - /u: dataset of shape (num_snapshots, N) for 1D or (num_snapshots, N, N) for 2D
  * - /v: dataset of shape (num_snapshots, N) for 1D or (num_snapshots, N, N) for 2D
@@ -21,9 +21,9 @@ class HDF5Writer
    public:
     /**
      * @brief Constructs and opens an HDF5 file for writing.
-     * 
+     *
      * Creates datasets for u, v, w variables with chunked storage and deflate compression.
-     * 
+     *
      * @param filename Path to the output HDF5 file
      * @param N Grid size per dimension
      * @param total_snapshots Total number of snapshots to store
@@ -39,9 +39,9 @@ class HDF5Writer
 
     /**
      * @brief Writes a single time step snapshot to the HDF5 file.
-     * 
+     *
      * Writes u, v, w data at the specified snapshot index using hyperslab selection.
-     * 
+     *
      * @param step_idx Snapshot index (0-based)
      * @param h_u Host array for activator variable u
      * @param h_v Host array for inhibitor variable v

@@ -9,7 +9,7 @@
 
 /**
  * @brief Simple file and console logger for simulation output.
- * 
+ *
  * Writes timestamped log messages to both a file and standard output.
  * Automatically logs simulation start/end markers and can estimate memory usage.
  */
@@ -54,11 +54,11 @@ class Logger
 
     /**
      * @brief Logs estimated memory usage for the simulation arrays.
-     * 
+     *
      * Calculates memory for:
      * - 6 device arrays: u, v, w, u_next, v_next, w_next
      * - 3 host arrays: h_u, h_v, h_w (for output)
-     * 
+     *
      * @param N Grid size per dimension
      */
     void logMemoryUsage(int N)

@@ -10,7 +10,7 @@ using json = nlohmann::json;
 
 /**
  * @brief Loads simulation parameters from a JSON configuration file.
- * 
+ *
  * Expected JSON structure:
  * {
  *   "simulation": {
@@ -26,7 +26,7 @@ using json = nlohmann::json;
  *     "a", "b", "c", "alpha", "phi", "eps2", "eps3", "D1", "D2", "D3"
  *   }
  * }
- * 
+ *
  * @param filename Path to the JSON configuration file
  * @return SimParams structure with loaded and validated parameters
  * @throws std::runtime_error if file cannot be opened or contains invalid/missing fields
@@ -75,7 +75,7 @@ SimParams ConfigLoader::load(const std::string& filename)
 
 /**
  * @brief Validates simulation parameters for consistency and numerical stability.
- * 
+ *
  * Performs the following checks:
  * 1. Dimension must be 1 or 2
  * 2. Grid size N must be at least 3
@@ -83,7 +83,7 @@ SimParams ConfigLoader::load(const std::string& filename)
  * 4. steps and num_snapshots must be positive
  * 5. Diffusion coefficients must be non-negative
  * 6. CFL stability condition (with warning if potentially unstable)
- * 
+ *
  * @param params Parameters to validate
  * @throws std::runtime_error if critical validation fails
  */
