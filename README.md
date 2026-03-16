@@ -45,14 +45,16 @@ mFHN-equation-explicit-solver/
 ├── README.md                   # This documentation file
 ├── initial_conditions_*.h5     # Example initial conditions (HDF5 format)
 ├── .gitignore                  # Git ignore rules
-└── src/                        # Source code directory
-    ├── main.cu                 # Main entry point and simulation loop
-    ├── solver_explicit.cu      # CUDA kernel implementations (1D/2D)
-    ├── solver_explicit.cuh     # CUDA kernel declarations
-    ├── params.h                # Parameter structures (ModelParams, SimParams)
-    ├── config.h / config.cpp   # JSON configuration loader
-    ├── h5_exporter.h / h5_exporter.cpp  # HDF5 output writer
-    └── logger.h                # File/console logging utility
+├── src/                        # Source code directory
+│   ├── main.cu                 # Main entry point and simulation loop
+│   ├── solver_explicit.cu      # CUDA kernel implementations (1D/2D)
+│   ├── solver_explicit.cuh     # CUDA kernel declarations
+│   ├── params.h                # Parameter structures (ModelParams, SimParams)
+│   ├── config.h / config.cpp   # JSON configuration loader
+│   ├── h5_exporter.h / h5_exporter.cpp  # HDF5 output writer
+│   └── logger.h                # File/console logging utility
+└── utils/                      # Python utilities
+    └── plot_snapshots.py       # Visualization script for HDF5 output
 ```
 
 ### Source Files Description
@@ -66,6 +68,7 @@ mFHN-equation-explicit-solver/
 | `config.h` / `config.cpp`           | JSON configuration loading and validation                                |
 | `h5_exporter.h` / `h5_exporter.cpp` | HDF5 file writer for simulation snapshots                                |
 | `logger.h`                          | Simple logging utility for console and file output                       |
+| `utils/plot_snapshots.py`           | Python script to visualize simulation results                            |
 
 ## Configuration
 
@@ -102,16 +105,54 @@ Edit `config.json` to set simulation parameters:
 ### Prerequisites
 
 - CUDA Toolkit (10.0+)
-- CMake (3.10+)
+- CMake (3.18+)
 - HDF5 library with C++ bindings
 - nlohmann/json library
+- ZLIB
 
-### Build Commands
+### Linux / WSL
+
+**Option 1: System Packages (Recommended)**
 
 ```bash
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install -y cmake ninja-build libhdf5-serial-dev nlohmann-json3-dev zlib1g-dev
+
+# Arch Linux
+sudo pacman -S cmake ninja hdf5 nlohmann-json zlib
+
+# Fedora
+sudo dnf install cmake ninja-build hdf5-devel nlohmann-json-devel zlib-devel
+
+# Build
 mkdir build && cd build
-cmake ..
-make -j$(nproc)
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+ninja
+```
+
+**Option 2: vcpkg**
+
+```bash
+# Install vcpkg dependencies
+./vcpkg install hdf5 nlohmann-json zlib
+
+# Build
+mkdir build && cd build
+cmake -G Ninja -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release ..
+ninja
+```
+
+### Windows (MSVC)
+
+```powershell
+# Install dependencies via vcpkg
+vcpkg install hdf5 nlohmann-json zlib
+
+# Build
+mkdir build && cd build
+cmake -G Ninja -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release ..
+ninja
 ```
 
 ## Running
@@ -142,6 +183,26 @@ result.h5
 └── w  # Dataset: same shape as u
 ```
 
+## Visualization
+
+A Python script is provided to visualize simulation results:
+
+```bash
+# Install dependencies
+pip install h5py matplotlib numpy
+
+# Plot 1D simulation results
+python utils/plot_snapshots.py results/2026-03-16/120000_dim1_N1024/result.h5
+
+# Plot 2D simulation results
+python utils/plot_snapshots.py results/2026-03-16/120000_dim2_N1024/result.h5
+```
+
+The script displays:
+
+- **1D**: Line plots of u(x) for initial and final snapshots
+- **2D**: Heatmaps of u(x,y) for initial and final snapshots
+
 ## Initial Conditions
 
 ### Default Generation
@@ -170,3 +231,7 @@ The explicit scheme requires the CFL condition to be satisfied:
 where D_max = max(D₁, D₂, D₃).
 
 The solver automatically checks this condition and warns if the time step may be unstable.
+
+## License
+
+[Add your license information here]

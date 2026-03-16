@@ -1,24 +1,67 @@
-# Distribution / packaging
-.Python
+# Build directories
 build/
+cmake-build-*/
+out/
 
-.clang-format
+# Compiled objects
+*.o
+*.so
+*.a
+*.lib
+*.dll
+*.exe
+*.out
+
+# CUDA
+*.cu.o
+*.cuh.o
+*.ptx
+*.fatbin.c
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Results and simulation output
 results/
-utils/
 
-# Jupyter Notebook
+# Large data files
+*.h5
+*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
 .ipynb_checkpoints
-
-
-# Environments
 .env
 .venv
-env/
 venv/
 ENV/
-env.bak/
-venv.bak/
 
+# OS
+.DS_Store
+Thumbs.db
 
-.csv
-.h5
+# Temporary files
+*.tmp
+*.log
+*.bak
+
+# Clang format config (if generated)
+.clang-format
+
+# processing python scripts and notebooks
+utils/processing.py
