@@ -41,9 +41,8 @@ The solver uses an explicit time-stepping scheme:
 ```
 mFHN-equation-explicit-solver/
 ├── CMakeLists.txt              # CMake build configuration
-├── config.json                 # Runtime configuration parameters
+├── config_template.json        # Runtime configuration parameters
 ├── README.md                   # This documentation file
-├── initial_conditions_*.h5     # Example initial conditions (HDF5 format)
 ├── .gitignore                  # Git ignore rules
 ├── src/                        # Source code directory
 │   ├── main.cu                 # Main entry point and simulation loop
@@ -55,6 +54,7 @@ mFHN-equation-explicit-solver/
 │   ├── cuda_utils.h            # CUDA error checking and RAII wrappers
 │   └── logger.h                # File/console logging utility
 └── utils/                      # Python utilities
+    ├── initial_conditions_*.h5 # Example initial conditions (HDF5 format)
     └── plot_snapshots.py       # Visualization script for HDF5 output
 ```
 
@@ -74,7 +74,7 @@ mFHN-equation-explicit-solver/
 
 ## Configuration
 
-Edit `config.json` to set simulation parameters:
+Edit `config_template.json` to set simulation parameters:
 
 ```json
 {
