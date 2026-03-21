@@ -1,5 +1,6 @@
 #include "h5_exporter.h"
 
+#include <algorithm>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -15,10 +16,10 @@ void HDF5Writer::writeAttribute(const std::string& name, const std::string& valu
     hid_t attr_type = H5Tcopy(H5T_C_S1);
     H5Tset_size(attr_type, value.size() + 1);
     H5Tset_strpad(attr_type, H5T_STR_NULLTERM);
-    
+
     hid_t attr = H5Acreate2(file_id_, name.c_str(), attr_type, attr_space, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(attr, attr_type, value.c_str());
-    
+
     H5Aclose(attr);
     H5Sclose(attr_space);
     H5Tclose(attr_type);
@@ -106,16 +107,13 @@ void HDF5Writer::writeMetadata(const SimParams& params)
  * @param dim Spatial dimension (must be 1 or 2)
  * @throws std::runtime_error if file creation fails or dim is invalid
  */
-HDF5Writer::HDF5Writer(const std::string& filename, int N, int total_snapshots, int dim)
-    : N_(N), total_snapshots_(total_snapshots), dim_(dim), file_id_(-1),
-      dataset_u_(-1), dataset_v_(-1), dataset_w_(-1), filespace_(-1), memspace_(-1)
+HDF5Writer::HDF5Writer(const std::string& filename, int N, int total_snapshots, int dim) : N_(N), total_snapshots_(total_snapshots), dim_(dim), file_id_(-1), dataset_u_(-1), dataset_v_(-1), dataset_w_(-1), filespace_(-1), memspace_(-1)
 {
     file_id_ = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     if (file_id_ < 0) {
         throw std::runtime_error("Failed to create HDF5 file: " + filename);
     }
 
-    herr_t status;
     if (dim_ == 1) {
         // 1D simulation: create datasets with shape (snapshots, N)
         hsize_t dims_file[2] = {static_cast<hsize_t>(total_snapshots_), static_cast<hsize_t>(N_)};

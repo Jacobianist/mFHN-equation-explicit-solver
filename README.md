@@ -52,6 +52,7 @@ mFHN-equation-explicit-solver/
 │   ├── params.h                # Parameter structures (ModelParams, SimParams)
 │   ├── config.h / config.cpp   # JSON configuration loader
 │   ├── h5_exporter.h / h5_exporter.cpp  # HDF5 output writer
+│   ├── cuda_utils.h            # CUDA error checking and RAII wrappers
 │   └── logger.h                # File/console logging utility
 └── utils/                      # Python utilities
     └── plot_snapshots.py       # Visualization script for HDF5 output
@@ -67,6 +68,7 @@ mFHN-equation-explicit-solver/
 | `params.h`                          | Data structures for model and simulation parameters                      |
 | `config.h` / `config.cpp`           | JSON configuration loading and validation                                |
 | `h5_exporter.h` / `h5_exporter.cpp` | HDF5 file writer for simulation snapshots                                |
+| `cuda_utils.h`                      | CUDA error checking macros and RAII memory wrappers                      |
 | `logger.h`                          | Simple logging utility for console and file output                       |
 | `utils/plot_snapshots.py`           | Python script to visualize simulation results                            |
 
@@ -158,12 +160,19 @@ ninja
 ## Running
 
 ```bash
-./mfhn_solver
+./mfhn_solver [config_file]
+```
+
+**Examples:**
+
+```bash
+./mfhn_solver                    # Uses config.json (default)
+./mfhn_solver my_config.json     # Uses specified config file
 ```
 
 The solver will:
 
-1. Load configuration from `config.json` or argumented json
+1. Load configuration from `config.json` or specified file
 2. Initialize or load initial conditions
 3. Run the simulation on GPU
 4. Save results to `results/YYYY-MM-DD/HHMMSS_dimN_N.../`
@@ -178,10 +187,32 @@ The solver will:
 
 ```
 result.h5
-├── u  # Dataset: (num_snapshots, N) for 1D or (num_snapshots, N, N) for 2D
-├── v  # Dataset: same shape as u
-└── w  # Dataset: same shape as u
+├── /u              # Dataset: (num_snapshots, N) for 1D or (num_snapshots, N, N) for 2D
+├── /v              # Dataset: same shape as u
+├── /w              # Dataset: same shape as u
+└── @attributes     # Simulation metadata (parameters, timestamp, etc.)
 ```
+
+### HDF5 Metadata Attributes
+
+The output file includes simulation metadata as attributes for reproducibility:
+
+- `creation_timestamp` — Date and time of simulation
+- `dimension` — Spatial dimension (1 or 2)
+- `grid_size_N` — Grid size per dimension
+- `dx`, `dt` — Spatial and temporal step sizes
+- `total_steps` — Total number of time steps
+- `num_snapshots` — Number of output snapshots
+- Model parameters: `model_a`, `model_b`, `model_c`, `model_alpha`, `model_phi`, `model_eps2`, `model_eps3`
+- Diffusion coefficients: `model_D1`, `model_D2`, `model_D3`
+- Derived values: `r_u`, `r_v`, `r_w`, `is_stable`
+
+### HDF5 Compression
+
+Output data uses chunked storage with deflate compression (level 6) for efficient file sizes:
+
+- **1D chunks**: `[1, N]` — one snapshot per chunk
+- **2D chunks**: `[1, N, N]` — one snapshot per chunk
 
 ## Visualization
 
@@ -231,3 +262,12 @@ The explicit scheme requires the CFL condition to be satisfied:
 where D_max = max(D₁, D₂, D₃).
 
 The solver automatically checks this condition and warns if the time step may be unstable.
+
+## Features
+
+- **CUDA error checking**: Automatic error detection for all CUDA operations
+- **RAII memory management**: Automatic cleanup of GPU resources
+- **HDF5 compression**: Chunked storage with deflate compression (level 6)
+- **Simulation metadata**: All parameters stored in output file for reproducibility
+- **Performance timing**: Per-step timing logged to simulation.log
+- **Stability validation**: CFL condition checked before simulation starts

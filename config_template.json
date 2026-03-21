@@ -1,11 +1,11 @@
 {
   "simulation": {
-    "N": 2048,
-    "dim": 1,
+    "N": 1024,
+    "dim": 2,
     "dx": 0.1,
     "dt": 0.005,
-    "steps": 50000,
-    "num_snapshots": 200,
+    "steps": 10000,
+    "num_snapshots": 10,
     "init_file": "./utils/initial_conditions_1024_0.1.h5"
   },
   "model": {

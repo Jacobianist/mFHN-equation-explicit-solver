@@ -30,17 +30,17 @@ struct ModelParams {
  * including spatial/temporal discretization, grid size, and model parameters.
  */
 struct SimParams {
-    int DIMENSION;            ///< Spatial dimension: 1 for 1D, 2 for 2D simulation
-    int N;                    ///< Grid size per dimension (N for 1D, N×N for 2D)
-    float dx;                 ///< Spatial step size (grid spacing)
-    float dt;                 ///< Time step size
-    int steps;                ///< Total number of time steps to simulate
-    int num_snapshots;        ///< Number of output snapshots to save
-    std::string init_file;    ///< Path to HDF5 file containing initial conditions
+    int DIMENSION;          ///< Spatial dimension: 1 for 1D, 2 for 2D simulation
+    int N;                  ///< Grid size per dimension (N for 1D, N×N for 2D)
+    float dx;               ///< Spatial step size (grid spacing)
+    float dt;               ///< Time step size
+    int steps;              ///< Total number of time steps to simulate
+    int num_snapshots;      ///< Number of output snapshots to save
+    std::string init_file;  ///< Path to HDF5 file containing initial conditions
 
-    ModelParams model;        ///< Model kinetic parameters
-    std::string output_dir = "./results";   ///< Output directory for results
-    std::string name = "mfhn_simulation";   ///< Simulation name identifier
+    ModelParams model;                     ///< Model kinetic parameters
+    std::string output_dir = "./results";  ///< Output directory for results
+    std::string name = "mfhn_simulation";  ///< Simulation name identifier
 
     /**
      * @brief Returns the total number of grid points for 1D simulation.

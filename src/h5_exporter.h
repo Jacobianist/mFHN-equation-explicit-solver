@@ -25,7 +25,7 @@ class HDF5Writer
     /**
      * @brief Constructs and opens an HDF5 file for writing.
      *
-     * Creates datasets for u, v, w variables with chunked storage and deflate compression.
+     * Creates datasets for u, v, w variables with chunked storage and deflate compression (level 6).
      * Writes simulation metadata as file attributes.
      *
      * @param filename Path to the output HDF5 file
@@ -63,16 +63,16 @@ class HDF5Writer
     void writeMetadata(const SimParams& params);
 
    private:
-    hid_t file_id_;         ///< HDF5 file identifier
-    hid_t dataset_u_;       ///< Dataset identifier for variable u
-    hid_t dataset_v_;       ///< Dataset identifier for variable v
-    hid_t dataset_w_;       ///< Dataset identifier for variable w
-    hid_t filespace_;       ///< File dataspace identifier
-    hid_t memspace_;        ///< Memory dataspace identifier
+    hid_t file_id_;    ///< HDF5 file identifier
+    hid_t dataset_u_;  ///< Dataset identifier for variable u
+    hid_t dataset_v_;  ///< Dataset identifier for variable v
+    hid_t dataset_w_;  ///< Dataset identifier for variable w
+    hid_t filespace_;  ///< File dataspace identifier
+    hid_t memspace_;   ///< Memory dataspace identifier
 
-    int N_;                 ///< Grid size per dimension
-    int total_snapshots_;   ///< Total number of snapshots
-    int dim_;               ///< Spatial dimension (1 or 2)
+    int N_;                ///< Grid size per dimension
+    int total_snapshots_;  ///< Total number of snapshots
+    int dim_;              ///< Spatial dimension (1 or 2)
 
     /**
      * @brief Write a string attribute to the file
