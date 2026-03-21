@@ -64,4 +64,5 @@ Thumbs.db
 .clang-format
 
 # processing python scripts and notebooks
-utils/processing.py
+config.json
+soup/

@@ -1,10 +1,8 @@
 #include <cuda_runtime.h>
 #include <hdf5.h>
 
-// #include <chrono>
 #include <filesystem>
 #include <iostream>
-// #include <ostream>
 #include <random>
 #include <sstream>
 #include <string>
@@ -178,7 +176,7 @@ bool load_hdf5_data(const std::string& filename, const std::string& dataset_name
  * @brief Main entry point for the mFHN explicit solver.
  *
  * Execution flow:
- * 1. Load configuration from config.json
+ * 1. Load configuration from config.json or json file from passed argument
  * 2. Create output directory structure (results/YYYY-MM-DD/HHMMSS_...)
  * 3. Initialize or load initial conditions
  * 4. Allocate CUDA device memory and transfer data
@@ -191,12 +189,16 @@ bool load_hdf5_data(const std::string& filename, const std::string& dataset_name
  * - results/YYYY-MM-DD/HHMMSS_dimN_N.../simulation.log - log file
  * - results/YYYY-MM-DD/HHMMSS_dimN_N.../config.json - copied config
  */
-int main()
+int main(int argc, char* argv[])
 {
     auto t_start = std::chrono::high_resolution_clock::now();
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
-    auto params = ConfigLoader::load("config.json");
+    std::string config_file = "config.json";
+    if (argc > 1) {
+        config_file = argv[1];
+    }
+    auto params = ConfigLoader::load(config_file);
     std::stringstream ss_date, ss_time;
     ss_date << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d");
     if (!std::filesystem::exists("results")) std::filesystem::create_directory("results");
@@ -214,7 +216,7 @@ int main()
 
     std::filesystem::create_directories(full_path);
     try {
-        std::filesystem::copy_file("config.json", full_path / "config.json");
+        std::filesystem::copy_file(config_file, full_path / "config.json");
     } catch (...) {
         std::cerr << "Warning: Could not copy config.json" << std::endl;
     }
@@ -268,7 +270,7 @@ int main()
     if (params.DIMENSION == 1) {
         // 1D simulation: 256 threads per block
         int blocks = (params.N + 255) / 256;
-        for (int ITERATION_STEP = 0; ITERATION_STEP < params.steps; ++ITERATION_STEP) {
+        for (int ITERATION_STEP = 1; ITERATION_STEP < params.steps; ++ITERATION_STEP) {
             gpu_explicit_1d<<<blocks, 256>>>(d_u_next, d_v_next, d_w_next, d_u, d_v, d_w, params, params.N, params.dt, params.r_u(), params.r_v(), params.r_w());
             // Swap current and next arrays (ping-pong buffering)
             std::swap(d_u, d_u_next);

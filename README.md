@@ -31,8 +31,8 @@ The solver uses an explicit time-stepping scheme:
 
 - **Reaction terms**: 4th-order Runge-Kutta (RK4)
 - **Diffusion terms**: Central finite differences (2nd order)
-    - 1D: 3-point stencil
-    - 2D: 5-point stencil
+  - 1D: 3-point stencil
+  - 2D: 5-point stencil
 - **Boundary conditions**: Neumann (zero-flux) on all boundaries
 - **Stability**: CFL condition checked with 10% safety margin
 
@@ -76,27 +76,27 @@ Edit `config.json` to set simulation parameters:
 
 ```json
 {
-    "simulation": {
-        "N": 1024, // Grid size (N for 1D, N×N for 2D)
-        "dim": 1, // Spatial dimension (1 or 2)
-        "dx": 0.1, // Spatial step size
-        "dt": 0.001, // Time step size
-        "steps": 100000, // Total number of time steps
-        "num_snapshots": 100, // Number of output snapshots
-        "init_file": "./path/to/initial.h5" // Initial conditions file
-    },
-    "model": {
-        "a": 3.5, // Reaction rate coefficient
-        "b": 3.0, // Coupling coefficient for v
-        "c": 3.5, // Coupling coefficient for w
-        "alpha": 1.5, // Cubic nonlinearity coefficient
-        "phi": 0.5, // Kinetics scaling factor
-        "eps2": 1.0, // Time scale for inhibitor v
-        "eps3": 0.5, // Time scale for inhibitor w
-        "D1": 0.0, // Diffusion coefficient for u
-        "D2": 0.0, // Diffusion coefficient for v
-        "D3": 0.5 // Diffusion coefficient for w
-    }
+  "simulation": {
+    "N": 1024, // Grid size (N for 1D, N×N for 2D)
+    "dim": 1, // Spatial dimension (1 or 2)
+    "dx": 0.1, // Spatial step size
+    "dt": 0.001, // Time step size
+    "steps": 100000, // Total number of time steps
+    "num_snapshots": 100, // Number of output snapshots
+    "init_file": "./path/to/initial.h5" // Initial conditions file
+  },
+  "model": {
+    "a": 3.5, // Reaction rate coefficient
+    "b": 3.0, // Coupling coefficient for v
+    "c": 3.5, // Coupling coefficient for w
+    "alpha": 1.5, // Cubic nonlinearity coefficient
+    "phi": 0.5, // Kinetics scaling factor
+    "eps2": 1.0, // Time scale for inhibitor v
+    "eps3": 0.5, // Time scale for inhibitor w
+    "D1": 0.0, // Diffusion coefficient for u
+    "D2": 0.0, // Diffusion coefficient for v
+    "D3": 0.5 // Diffusion coefficient for w
+  }
 }
 ```
 
@@ -163,7 +163,7 @@ ninja
 
 The solver will:
 
-1. Load configuration from `config.json`
+1. Load configuration from `config.json` or argumented json
 2. Initialize or load initial conditions
 3. Run the simulation on GPU
 4. Save results to `results/YYYY-MM-DD/HHMMSS_dimN_N.../`
@@ -231,7 +231,3 @@ The explicit scheme requires the CFL condition to be satisfied:
 where D_max = max(D₁, D₂, D₃).
 
 The solver automatically checks this condition and warns if the time step may be unstable.
-
-## License
-
-[Add your license information here]
